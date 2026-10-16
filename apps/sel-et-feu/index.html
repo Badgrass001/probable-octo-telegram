@@ -1,0 +1,668 @@
+<title>Sel &amp; Feu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout : une colonne façon app mobile (480px max), en-tête collant, barre d'onglets fixe en bas. */
+:root {
+  --bg: #F1F4F1;
+  --surface: #FFFFFF;
+  --sunk: #E6ECE8;
+  --ink: #18201C;
+  --muted: #5A6862;
+  --line: #D6DED9;
+  --accent: #1E6E47;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEFE4;
+  --sel: #3F679E;
+  --acide: #8A7A00;
+  --gras: #9A5F0C;
+  --chaleur: #B83A0A;
+  --monde: #6B4FA0;
+  --tech: #2F6F78;
+  --good: #1E7A44;
+  --bad: #B3261E;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #1A211E; --sunk: #222B27; --ink: #E6EDE9; --muted: #98A69F; --line: #2C3632;
+    --accent: #52C48B; --accent-ink: #0C1A13; --accent-soft: #1D3328;
+    --sel: #86A9DD; --acide: #D9C83C; --gras: #E0A24A; --chaleur: #F07A4A; --monde: #B39AE6; --tech: #6CC0CA;
+    --good: #5CCB8A; --bad: #F2867E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #1A211E; --sunk: #222B27; --ink: #E6EDE9; --muted: #98A69F; --line: #2C3632;
+  --accent: #52C48B; --accent-ink: #0C1A13; --accent-soft: #1D3328;
+  --sel: #86A9DD; --acide: #D9C83C; --gras: #E0A24A; --chaleur: #F07A4A; --monde: #B39AE6; --tech: #6CC0CA;
+  --good: #5CCB8A; --bad: #F2867E;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+
+.app {
+  max-width: 480px; margin: 0 auto; min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+/* En-tête */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); display: flex; align-items: center; gap: 10px;
+  padding-block: 14px 10px;
+}
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.01em; margin-right: auto; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 26px; height: 26px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+}
+.chip svg { width: 16px; height: 16px; }
+.back { background: none; border: 0; padding: 6px; margin-left: -6px; display: inline-flex; border-radius: 10px; }
+.back svg { width: 24px; height: 24px; }
+
+/* Accueil */
+.hello { display: grid; gap: 4px; padding-block: 8px 18px; }
+.hello h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; }
+.hello p { margin: 0; color: var(--muted); }
+
+.next {
+  display: grid; gap: 12px; padding: 18px; border-radius: var(--radius);
+  background: var(--accent); color: var(--accent-ink); border: 0; text-align: left; width: 100%;
+}
+.next .eyebrow { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; opacity: .85; }
+.next h2 { font-size: 1.35rem; font-weight: 800; }
+.next .go { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: .9rem; }
+
+.section { display: grid; gap: 10px; padding-block: 22px 0; }
+.section > h3 { font-family: var(--font-body); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+.pillars { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.track {
+  display: grid; gap: 10px; align-content: start; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+}
+.track:hover { border-color: var(--c); }
+.glyph {
+  width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c);
+  font-family: var(--font-display); font-weight: 800; font-size: 1.25rem;
+}
+.track .name { font-weight: 700; font-size: 1.02rem; }
+.track .meta { color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--c, var(--accent)); border-radius: inherit; transition: width .4s ease; }
+
+.list { display: grid; gap: 8px; }
+.row {
+  display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; width: 100%;
+}
+.row:hover { border-color: var(--c, var(--accent)); }
+.row .txt { min-width: 0; display: grid; gap: 2px; }
+.row .name { font-weight: 700; }
+.row .meta { color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.row .end { color: var(--muted); }
+.row .end svg { width: 20px; height: 20px; display: block; }
+
+/* Piste */
+.track-head { display: grid; gap: 10px; padding-block: 6px 18px; }
+.track-head h1 { font-size: 1.8rem; font-weight: 800; }
+.track-head p { margin: 0; color: var(--muted); }
+.lesson-row .num {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  border: 2px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.lesson-row.done .num { background: var(--c); border-color: var(--c); color: var(--surface); }
+.lesson-row.done .num svg { width: 20px; height: 20px; }
+
+/* Leçon */
+.lesson { display: grid; gap: 18px; padding-block: 4px 0; }
+.steps { display: flex; gap: 6px; }
+.steps i { flex: 1; height: 6px; border-radius: 99px; background: var(--sunk); }
+.steps i.on { background: var(--c); }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px 20px; display: grid; gap: 12px; min-height: 260px; align-content: start;
+}
+.card .kicker { color: var(--c); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+.card h2 { font-size: 1.45rem; font-weight: 800; }
+.card p { margin: 0; font-size: 1.05rem; }
+.card .tip { background: var(--sunk); border-radius: 10px; padding: 10px 12px; font-size: .95rem; color: var(--ink); }
+.card .tip b { color: var(--c); }
+.opts { display: grid; gap: 8px; }
+.opt {
+  text-align: left; padding: 13px 14px; border-radius: 12px; background: var(--bg);
+  border: 2px solid var(--line); font-weight: 600;
+}
+.opt:hover:not(:disabled) { border-color: var(--c); }
+.opt.right { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, var(--surface)); }
+.opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, var(--surface)); }
+.opt:disabled { cursor: default; }
+.feedback { font-size: .95rem; border-radius: 10px; padding: 10px 12px; }
+.feedback.ok { background: color-mix(in srgb, var(--good) 14%, transparent); }
+.feedback.ko { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.feedback strong { display: block; }
+
+.cta {
+  width: 100%; padding: 15px; border-radius: 14px; border: 0; font-weight: 700; font-size: 1.02rem;
+  background: var(--accent); color: var(--accent-ink);
+}
+.cta:disabled { background: var(--sunk); color: var(--muted); cursor: default; }
+.cta.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+
+.done-screen { text-align: center; display: grid; gap: 14px; justify-items: center; padding-block: 30px; }
+.done-screen .medal {
+  width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c);
+}
+.done-screen .medal svg { width: 48px; height: 48px; }
+.done-screen h1 { font-size: 1.8rem; font-weight: 800; }
+.done-screen p { margin: 0; color: var(--muted); max-width: 32ch; }
+.done-screen .xp { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: var(--accent); }
+.actions { display: grid; gap: 10px; width: 100%; }
+
+/* Réparer un plat */
+.fix-intro { display: grid; gap: 6px; padding-block: 8px 16px; }
+.fix-intro h1 { font-size: 1.8rem; font-weight: 800; }
+.fix-intro p { margin: 0; color: var(--muted); }
+.problems { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.problem {
+  text-align: left; display: grid; gap: 4px; padding: 14px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.problem:hover { border-color: var(--c); }
+.problem .tag { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--c); }
+.problem .name { font-weight: 700; line-height: 1.25; }
+.fix { display: grid; gap: 14px; }
+.fix h1 { font-size: 1.7rem; font-weight: 800; }
+.fix .symptom { color: var(--muted); margin: 0; }
+.block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 8px; }
+.block h3 { font-family: var(--font-body); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--c); }
+.block p { margin: 0; }
+.block ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+.block.primary { border-color: var(--c); border-width: 2px; }
+
+/* Profil */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 12px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .8rem; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day { display: grid; gap: 6px; justify-items: center; font-size: .75rem; color: var(--muted); }
+.day i { width: 100%; aspect-ratio: 1; max-width: 100%; border-radius: 10px; background: var(--sunk); display: block; }
+.day.on i { background: var(--accent); }
+.confirm { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--bad); border-radius: var(--radius); padding: 14px; }
+.confirm p { margin: 0; }
+.confirm .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.danger { background: var(--bad); color: var(--surface); }
+.note { color: var(--muted); font-size: .85rem; margin: 0; }
+
+/* Barre d'onglets */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.tabs nav { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.tab { background: none; border: 0; padding: 10px 4px 12px; display: grid; justify-items: center; gap: 3px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.tab svg { width: 24px; height: 24px; }
+.tab[aria-current="page"] { color: var(--accent); }
+
+.view { animation: rise .25s ease both; }
+@keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .view { animation: none; } .bar > i { transition: none; } }
+@media (max-width: 360px) { .problems, .pillars { grid-template-columns: 1fr; } }
+</style>
+
+<div class="app">
+  <header class="top" id="top"></header>
+  <main id="main"></main>
+</div>
+<div class="tabs"><nav id="tabs" aria-label="Navigation principale"></nav></div>
+
+<script>
+// ---------- Icônes ----------
+const I = {
+  flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 7h6"/></svg>',
+  wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21l7-7"/><path d="M14.5 3.5a4.5 4.5 0 0 0-1.8 5.9L11 11l2 2 1.6-1.7a4.5 4.5 0 0 0 5.9-1.8l-2.8-.6-.6-2.8z"/><path d="M8 4l2 2-1 3-3 1-2-2"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  pan: '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><ellipse cx="13" cy="18" rx="10" ry="6" /><path d="M23 17l7-3"/><path d="M10 9c0-2 2-2 2-4M15 9c0-2 2-2 2-4" /></svg>'
+};
+
+// ---------- Contenu ----------
+// Étape : { k:"card", h, p, tip } ou { k:"quiz", q, o:[...], a: index, why }
+const TRACKS = [
+  { id:"sel", group:"Les quatre piliers", name:"Le sel", glyph:"S", color:"--sel", desc:"Le sel fait ressortir les saveurs. Tout le reste en dépend.", lessons:[
+    { title:"Pourquoi saler ?", steps:[
+      { k:"card", h:"Le sel n’ajoute pas qu’un goût salé", p:"Bien dosé, il atténue l’amertume et fait ressortir les arômes déjà présents. Une tomate salée a plus le goût de tomate.", tip:"<b>Test :</b> goûtez une rondelle de concombre nature, puis avec trois grains de sel." },
+      { k:"card", h:"Salez tôt, par petites touches", p:"Le sel met du temps à pénétrer les aliments. Salé en début de cuisson, un plat est assaisonné à cœur. Salé à la fin, il reste fade dedans et salé dessus." },
+      { k:"quiz", q:"Quel est l’effet d’un peu de sel sur l’amertume ?", o:["Il l’accentue","Il l’atténue","Il n’a aucun effet"], a:1, why:"Le sel bloque en partie la perception de l’amertume. C’est pour ça qu’on sale le pamplemousse ou les endives." }
+    ]},
+    { title:"Saler l’eau de cuisson", steps:[
+      { k:"card", h:"10 g par litre", p:"Pour les pâtes et les légumes, comptez environ 10 g de sel par litre d’eau, soit une cuillère à soupe rase. L’eau doit avoir le goût d’un bouillon bien assaisonné.", tip:"<b>Repère :</b> pour 500 g de pâtes, 5 L d’eau et 50 g de sel." },
+      { k:"card", h:"Saler au bon moment", p:"Salez l’eau quand elle bout. Le sel ne la fait pas bouillir plus vite de façon perceptible, mais une eau salée froide peut piquer le fond des casseroles en inox." },
+      { k:"quiz", q:"Combien de sel pour 3 L d’eau de cuisson des pâtes ?", o:["3 g","30 g","150 g"], a:1, why:"10 g par litre, donc 30 g. À 3 g, les pâtes restent fades ; à 150 g, elles sont immangeables." }
+    ]},
+    { title:"Saler la viande à l’avance", steps:[
+      { k:"card", h:"Le sel a besoin de temps", p:"Sur une viande, le sel attire d’abord l’humidité vers la surface. Après environ 40 minutes, ce jus salé est réabsorbé et assaisonne la chair en profondeur." },
+      { k:"card", h:"La zone à éviter", p:"Entre 3 et 40 minutes après salage, la surface est humide. La viande colore mal et bout dans la poêle. Salez juste avant la cuisson, ou au moins 40 minutes avant.", tip:"<b>Idéal :</b> salez un poulet entier la veille et laissez-le à découvert au réfrigérateur." },
+      { k:"quiz", q:"Vous allez saisir un steak. Quand le saler ?", o:["15 minutes avant","Juste avant ou au moins 40 minutes avant","Seulement après la cuisson"], a:1, why:"À 15 minutes, la surface est mouillée et la croûte se forme mal." }
+    ]}
+  ]},
+  { id:"acide", group:"Les quatre piliers", name:"L’acide", glyph:"A", color:"--acide", desc:"L’acidité équilibre, allège et réveille un plat lourd.", lessons:[
+    { title:"L’acide réveille un plat", steps:[
+      { k:"card", h:"Le manque d’acide passe pour un manque de sel", p:"Un plat qui paraît plat ou lourd alors qu’il est assez salé manque souvent d’acidité. Citron, vinaigre, tomate, yaourt, vin : tous apportent du relief." },
+      { k:"card", h:"Goûtez, ajustez, regoûtez", p:"Ajoutez l’acide par gouttes, puis goûtez. Le bon dosage se reconnaît : le plat paraît plus vif, sans goût de citron marqué.", tip:"<b>Astuce :</b> gardez un demi-citron près des plaques pendant la cuisson." },
+      { k:"quiz", q:"Votre sauce crémée est assez salée mais paraît terne et lourde. Que faire ?", o:["Ajouter du sel","Ajouter quelques gouttes de citron","Ajouter du beurre"], a:1, why:"L’acide coupe la richesse du gras et fait ressortir les arômes. Le sel n’y changera rien." }
+    ]},
+    { title:"L’acide au bon moment", steps:[
+      { k:"card", h:"En fin de cuisson, il reste vif", p:"Un trait de vinaigre ajouté à la fin garde tout son mordant. Ajouté au début, il s’adoucit et se fond dans le plat. Choisissez selon l’effet voulu." },
+      { k:"card", h:"L’acide ralentit la cuisson", p:"En milieu acide, les légumineuses et certains légumes ramollissent beaucoup plus lentement. Des haricots secs cuits avec de la tomate peuvent rester durs pendant des heures.", tip:"<b>Règle :</b> cuisez les haricots à l’eau, puis ajoutez la tomate." },
+      { k:"quiz", q:"Pourquoi vos pois chiches restent durs après 2 h de cuisson avec la tomate ?", o:["L’acide de la tomate ralentit leur ramollissement","La tomate les sale trop","Ils ont été trempés trop longtemps"], a:0, why:"L’acidité renforce les parois des cellules végétales. Cuisez d’abord, acidifiez ensuite." }
+    ]},
+    { title:"Équilibrer une vinaigrette", steps:[
+      { k:"card", h:"Trois pour un", p:"Le point de départ classique : 3 volumes d’huile pour 1 volume de vinaigre, plus du sel. Avec un vinaigre doux ou du citron, on peut aller vers 2 pour 1." },
+      { k:"card", h:"Goûtez sur une feuille", p:"Une vinaigrette goûtée à la cuillère paraît toujours trop acide. Trempez-y une feuille de salade : c’est ainsi qu’elle sera mangée.", tip:"<b>Liaison :</b> une cuillère à café de moutarde aide l’huile et le vinaigre à rester mélangés." },
+      { k:"quiz", q:"Pour 9 cuillères d’huile, combien de vinaigre de vin ?", o:["1","3","9"], a:1, why:"Le rapport 3 pour 1 donne 3 cuillères de vinaigre." }
+    ]}
+  ]},
+  { id:"gras", group:"Les quatre piliers", name:"Le gras", glyph:"G", color:"--gras", desc:"Le gras porte les arômes et donne la texture.", lessons:[
+    { title:"Le gras porte les arômes", steps:[
+      { k:"card", h:"Beaucoup d’arômes se dissolvent dans le gras", p:"Les composés aromatiques de l’ail, des épices ou des herbes se dissolvent mieux dans l’huile que dans l’eau. Une épice revenue dans l’huile chaude libère bien plus de goût qu’une épice jetée dans une sauce." },
+      { k:"card", h:"Le gras arrondit", p:"Il adoucit l’acidité et le piquant et donne de la longueur en bouche. Un filet d’huile d’olive en finition change la perception d’une soupe.", tip:"<b>Finition :</b> une noix de beurre froid hors du feu lie et lustre une sauce." },
+      { k:"quiz", q:"Pour tirer le maximum d’un cumin en grains, vous…", o:["le faites bouillir dans l’eau","le faites crépiter dans l’huile chaude","l’ajoutez cru au service"], a:1, why:"La chaleur et le gras libèrent et transportent les arômes du cumin." }
+    ]},
+    { title:"Choisir sa matière grasse", steps:[
+      { k:"card", h:"Le point de fumée", p:"Chaque graisse a une température à partir de laquelle elle fume et se dégrade. Ordres de grandeur : beurre ~150 °C, huile d’olive vierge extra ~190 °C, huile de tournesol raffinée ~230 °C, beurre clarifié ~250 °C." },
+      { k:"card", h:"Associer la graisse à la cuisson", p:"Pour saisir à feu vif, prenez une huile neutre raffinée ou du beurre clarifié. Gardez le beurre frais pour la cuisson douce et l’arrosage en fin de cuisson.", tip:"<b>Astuce :</b> démarrez à l’huile, ajoutez le beurre en fin de saisie pour le goût." },
+      { k:"quiz", q:"Quelle matière grasse pour saisir une pièce de bœuf à feu très vif ?", o:["Beurre doux","Beurre clarifié","Huile de noix"], a:1, why:"Sans ses protéines de lait, le beurre clarifié supporte environ 250 °C sans brûler." }
+    ]},
+    { title:"Réussir une émulsion", steps:[
+      { k:"card", h:"Disperser une graisse dans l’eau", p:"Mayonnaise, vinaigrette, beurre blanc : ce sont des gouttelettes de gras dispersées dans un liquide. Un émulsifiant (jaune d’œuf, moutarde) les empêche de se regrouper." },
+      { k:"card", h:"Lentement au début", p:"Versez la matière grasse en filet très fin au départ, en fouettant sans arrêt. Une fois l’émulsion prise, vous pouvez accélérer. Tous les ingrédients doivent être à la même température.", tip:"<b>Mayonnaise :</b> 1 jaune d’œuf tient sans peine 20 cl d’huile." },
+      { k:"quiz", q:"Votre mayonnaise ne prend pas. Cause la plus probable ?", o:["L’huile a été versée trop vite","Trop de sel","Le bol était trop grand"], a:0, why:"Trop d’huile d’un coup sature l’émulsifiant. Recommencez avec un nouveau jaune et versez en filet." }
+    ]}
+  ]},
+  { id:"chaleur", group:"Les quatre piliers", name:"La chaleur", glyph:"C", color:"--chaleur", desc:"Saisir, mijoter, reposer : la chaleur décide de la texture.", lessons:[
+    { title:"Saisir ou mijoter", steps:[
+      { k:"card", h:"Vite et fort pour les pièces tendres", p:"Filet, poisson, légumes verts : une cuisson courte à haute température garde le moelleux et colore la surface." },
+      { k:"card", h:"Lent et humide pour les pièces fermes", p:"Joue, paleron, jarret sont riches en collagène. Il faut plusieurs heures autour de 90 °C, dans un liquide, pour qu’il se transforme en gélatine fondante.", tip:"<b>Repère :</b> un bourguignon mijote 3 h à frémissement, jamais à gros bouillons." },
+      { k:"quiz", q:"Comment cuire une joue de bœuf ?", o:["Saisie 2 min par face","Braisée 3 h à couvert","Grillée au barbecue"], a:1, why:"Le collagène de la joue a besoin d’une cuisson longue et humide pour fondre." }
+    ]},
+    { title:"La réaction de Maillard", steps:[
+      { k:"card", h:"La croûte dorée", p:"À partir d’environ 140 °C, protéines et sucres réagissent et créent des centaines de composés aromatiques. C’est la croûte du pain, du steak, des oignons dorés." },
+      { k:"card", h:"Elle demande une surface sèche", p:"Tant qu’il y a de l’eau, la surface ne dépasse pas 100 °C. Séchez la viande, préchauffez la poêle, et ne la surchargez pas : sinon tout bout au lieu de dorer.", tip:"<b>Règle :</b> laissez un doigt d’espace entre chaque morceau." },
+      { k:"quiz", q:"Vos champignons rendent de l’eau et restent gris. Pourquoi ?", o:["La poêle est trop chargée","Ils manquent de sel","Le feu est trop fort"], a:0, why:"Entassés, ils libèrent trop de vapeur et la température chute sous le seuil de Maillard. Cuisez-les en deux fois." }
+    ]},
+    { title:"Laisser reposer", steps:[
+      { k:"card", h:"La cuisson continue hors du feu", p:"La chaleur accumulée en surface continue de migrer vers le cœur. Une pièce épaisse peut encore gagner 3 à 5 °C après sa sortie du four." },
+      { k:"card", h:"Le repos garde le jus", p:"Laissez reposer 5 à 10 minutes une viande poêlée, 15 à 20 minutes un rôti. Retirez-la quelques degrés avant la température voulue.", tip:"<b>Bœuf saignant :</b> sortez-le à 50 °C à cœur, il finira vers 54 °C." },
+      { k:"quiz", q:"Vous visez 57 °C à cœur pour un rôti de bœuf. Quand le sortir ?", o:["À 57 °C","Vers 53 °C","À 65 °C"], a:1, why:"Il prendra encore 3 à 5 °C pendant le repos." }
+    ]}
+  ]},
+  { id:"italie", group:"Cuisines du monde", name:"Italienne", glyph:"It", color:"--monde", desc:"Peu d’ingrédients, beaucoup de précision.", lessons:[
+    { title:"Les pâtes al dente", steps:[
+      { k:"card", h:"Finir dans la sauce", p:"Égouttez les pâtes une à deux minutes avant le temps indiqué et finissez la cuisson dans la poêle avec la sauce. Elles absorbent son goût au lieu de l’eau." },
+      { k:"card", h:"L’eau de cuisson est un ingrédient", p:"Chargée d’amidon, elle lie la sauce et la rend nappante. Gardez-en toujours une louche avant d’égoutter.", tip:"<b>Cacio e pepe :</b> fromage, poivre et eau de cuisson, rien d’autre." },
+      { k:"quiz", q:"À quoi sert la louche d’eau de cuisson ?", o:["À refroidir les pâtes","À lier la sauce grâce à l’amidon","À dessaler la sauce"], a:1, why:"L’amidon dissous agit comme un liant et aide la sauce à émulsionner." }
+    ]},
+    { title:"Le soffritto", steps:[
+      { k:"card", h:"La base de nombreuses sauces", p:"Oignon, carotte et céleri taillés fin, revenus doucement dans l’huile d’olive. C’est le socle du ragù et de beaucoup de soupes." },
+      { k:"card", h:"La patience", p:"Comptez 10 à 15 minutes à feu doux. Les légumes doivent fondre et blondir, pas griller. C’est là que naît la douceur de la sauce.", tip:"<b>Proportions :</b> 2 parts d’oignon, 1 de carotte, 1 de céleri." },
+      { k:"quiz", q:"Votre soffritto noircit en 3 minutes. Qu’est-ce qui ne va pas ?", o:["Le feu est trop fort","Il manque de sel","Les légumes sont trop gros"], a:0, why:"Un soffritto se cuit lentement, à feu doux." }
+    ]}
+  ]},
+  { id:"japon", group:"Cuisines du monde", name:"Japonaise", glyph:"Ja", color:"--monde", desc:"L’umami, la propreté des saveurs, le riz.", lessons:[
+    { title:"Le dashi", steps:[
+      { k:"card", h:"Le bouillon de base", p:"Algue kombu et flocons de bonite séchée (katsuobushi). Il apporte l’umami de la soupe miso et de nombreuses sauces." },
+      { k:"card", h:"Ne pas faire bouillir le kombu", p:"Faites infuser le kombu dans l’eau froide puis chauffez doucement vers 60 °C. Retirez-le avant ébullition, sinon le bouillon devient visqueux et amer. Ajoutez ensuite la bonite hors du feu.", tip:"<b>Dose :</b> 10 g de kombu et 15 g de katsuobushi par litre." },
+      { k:"quiz", q:"Quand retirer le kombu ?", o:["Après 30 min d’ébullition","Avant que l’eau ne bouille","Jamais"], a:1, why:"Bouilli, le kombu libère des composés gluants et amers." }
+    ]},
+    { title:"Le riz japonais", steps:[
+      { k:"card", h:"Rincer jusqu’à l’eau claire", p:"Rincez le riz rond en le frottant doucement, en changeant l’eau 4 à 5 fois. On retire l’amidon de surface qui rendrait le riz collant et pâteux." },
+      { k:"card", h:"Peu d’eau, puis repos", p:"Comptez environ 1,1 volume d’eau pour 1 volume de riz. Après cuisson, laissez reposer 10 minutes à couvert : la vapeur finit le travail.", tip:"<b>Ne soulevez pas</b> le couvercle pendant la cuisson." },
+      { k:"quiz", q:"Pourquoi rincer le riz avant cuisson ?", o:["Pour le saler","Pour retirer l’amidon de surface","Pour le cuire plus vite"], a:1, why:"L’amidon de surface forme une colle. Les grains rincés restent distincts et brillants." }
+    ]}
+  ]},
+  { id:"inde", group:"Cuisines du monde", name:"Indienne", glyph:"In", color:"--monde", desc:"Les épices, l’ordre et la chaleur.", lessons:[
+    { title:"Le tadka", steps:[
+      { k:"card", h:"Des épices frites dans le gras", p:"Cumin, moutarde, piment sec, feuilles de curry crépitent quelques secondes dans le ghee ou l’huile très chaude. On verse le tout, grésillant, sur un dal ou un plat." },
+      { k:"card", h:"Quelques secondes suffisent", p:"Dès que les graines de moutarde sautent et que le cumin brunit, c’est prêt. Dix secondes de plus et c’est brûlé et amer.", tip:"<b>Ordre :</b> graines d’abord, poudres en tout dernier, hors du feu." },
+      { k:"quiz", q:"Quand le tadka est-il prêt ?", o:["Quand les graines de moutarde sautent","Après 5 minutes","Quand l’huile fume fort"], a:0, why:"Le crépitement indique que les arômes sont libérés. Au-delà, les épices brûlent." }
+    ]},
+    { title:"Bâtir un masala", steps:[
+      { k:"card", h:"Chaque étape a son temps", p:"Oignon bien doré, puis gingembre et ail, puis épices moulues une minute, puis tomate. Chaque couche doit cuire avant la suivante." },
+      { k:"card", h:"Quand l’huile se sépare", p:"La base est prête quand l’huile perle sur les bords de la préparation. C’est le signe que l’eau s’est évaporée et que les épices ont frit.", tip:"<b>Patience :</b> 20 à 25 minutes pour un oignon vraiment doré." },
+      { k:"quiz", q:"Quel signe indique que la base est prête ?", o:["L’huile se sépare sur les bords","Elle bout fort","Elle devient liquide"], a:0, why:"La séparation de l’huile montre que l’eau est partie et que les épices cuisent dans le gras." }
+    ]}
+  ]},
+  { id:"mexique", group:"Cuisines du monde", name:"Mexicaine", glyph:"Mx", color:"--monde", desc:"Piments, maïs, fraîcheur.", lessons:[
+    { title:"Griller les piments secs", steps:[
+      { k:"card", h:"Réveiller les arômes", p:"Ancho, guajillo, pasilla : passés dans une poêle sèche, ils développent des notes fumées et fruitées avant d’être réhydratés." },
+      { k:"card", h:"30 secondes par face", p:"Ils doivent devenir souples et parfumés. Dès qu’ils fument ou noircissent, ils deviennent amers.", tip:"<b>Ensuite :</b> trempez-les 20 min dans l’eau chaude, puis mixez." },
+      { k:"quiz", q:"Votre sauce aux piments est amère. Cause probable ?", o:["Piments trop grillés","Pas assez de sel","Trop de tomate"], a:0, why:"Un piment sec brûlé donne une amertume que rien ne rattrape." }
+    ]},
+    { title:"La salsa fraîche", steps:[
+      { k:"card", h:"Six ingrédients", p:"Tomate, oignon blanc, piment frais, coriandre, citron vert et sel. Taillez tout en petits dés réguliers." },
+      { k:"card", h:"Laissez-la reposer", p:"15 minutes de repos permettent au sel de tirer le jus de la tomate et aux saveurs de se mélanger. Goûtez et rectifiez le sel et le citron.", tip:"<b>Oignon trop fort ?</b> Rincez-le à l’eau froide avant de l’ajouter." },
+      { k:"quiz", q:"Pourquoi laisser reposer la salsa ?", o:["Pour qu’elle refroidisse","Pour que le sel et l’acide fassent leur travail","Pour qu’elle épaississe"], a:1, why:"Le sel fait rendre le jus, qui devient la sauce et mêle les saveurs." }
+    ]}
+  ]},
+  { id:"patisserie", group:"Techniques", name:"Pâtisserie", glyph:"P", color:"--tech", desc:"La précision avant tout.", lessons:[
+    { title:"Peser plutôt que mesurer", steps:[
+      { k:"card", h:"Une tasse n’est pas une mesure", p:"Selon qu’elle est tassée ou non, une tasse de farine pèse de 120 à 150 g. Cet écart suffit à rater un gâteau." },
+      { k:"card", h:"La balance d’abord", p:"En pâtisserie, tout se pèse, y compris les liquides et les œufs. Un œuf moyen sans coquille pèse environ 50 g.", tip:"<b>Pratique :</b> utilisez la fonction tare et pesez tout dans le même bol." },
+      { k:"quiz", q:"Pourquoi peser la farine ?", o:["Le volume varie selon le tassement","La farine perd du poids","C’est plus rapide"], a:0, why:"Le poids est constant, le volume dépend de la façon dont on remplit la tasse." }
+    ]},
+    { title:"Le beurre froid", steps:[
+      { k:"card", h:"Pâte brisée et sablée", p:"Des morceaux de beurre froid dispersés dans la farine fondent au four et libèrent de la vapeur. Ils créent des couches et une texture friable." },
+      { k:"card", h:"Travaillez vite, reposez au froid", p:"Ne pétrissez pas trop : le gluten rendrait la pâte élastique. Laissez-la reposer au moins 30 minutes au réfrigérateur avant de l’étaler.", tip:"<b>Signe :</b> il doit rester de petits éclats de beurre visibles." },
+      { k:"quiz", q:"Votre pâte brisée se rétracte à la cuisson. Pourquoi ?", o:["Trop travaillée et pas assez reposée","Trop de beurre","Four trop froid"], a:0, why:"Le gluten trop développé se contracte à la chaleur. Le repos le détend." }
+    ]}
+  ]},
+  { id:"grill", group:"Techniques", name:"Grillade", glyph:"Gr", color:"--tech", desc:"Maîtriser la flamme et les braises.", lessons:[
+    { title:"Deux zones de chaleur", steps:[
+      { k:"card", h:"Une zone directe, une indirecte", p:"Répartissez les braises d’un seul côté. Au-dessus, on saisit. De l’autre côté, on finit la cuisson sans brûler la surface." },
+      { k:"card", h:"Saisir puis déplacer", p:"Colorez la pièce au-dessus des braises, puis déplacez-la en zone indirecte et fermez le couvercle jusqu’à la température voulue.", tip:"<b>Repère :</b> main à 10 cm de la grille, 2 secondes de tolérance = feu vif." },
+      { k:"quiz", q:"Une cuisse de poulet est noire dehors et crue dedans. Que fallait-il faire ?", o:["Finir en zone indirecte","Monter le feu","La retourner plus souvent"], a:0, why:"La zone indirecte cuit à cœur sans carboniser la surface." }
+    ]},
+    { title:"Éviter que ça accroche", steps:[
+      { k:"card", h:"Grille propre, chaude, aliment huilé", p:"Brossez la grille, laissez-la chauffer 10 minutes, puis huilez l’aliment plutôt que la grille. L’huile sur la grille brûle avant d’être utile." },
+      { k:"card", h:"Ne bougez pas trop tôt", p:"Une viande ou un poisson se décolle seul une fois la croûte formée. S’il résiste, attendez encore une minute.", tip:"<b>Poisson :</b> laissez la peau, elle protège la chair." },
+      { k:"quiz", q:"Votre poisson colle à la grille. Que faire ?", o:["Attendre que la croûte se forme","Le gratter tout de suite","Ajouter de l’eau"], a:0, why:"La croûte formée, il se détache sans effort." }
+    ]}
+  ]}
+];
+
+const FIXES = [
+  { id:"fade", tag:"Sel", color:"--sel", name:"Fade, sans relief", symptom:"Le plat a du goût mais ne « ressort » pas.", steps:["Ajoutez une petite pincée de sel, mélangez, goûtez.","Si c’est mieux mais encore terne, ajoutez quelques gouttes de citron ou de vinaigre.","Terminez par un filet d’huile d’olive ou des herbes fraîches."], why:"Le sel amplifie les arômes présents. L’acidité donne le contraste qui rend un plat vivant.", next:"Salez dès le début de la cuisson et goûtez à chaque étape." },
+  { id:"sale", tag:"Sel", color:"--sel", name:"Trop salé", symptom:"Le sel domine tout le reste.", steps:["Diluez : ajoutez du bouillon non salé, de l’eau, de la crème ou des tomates.","Augmentez le volume avec un élément non salé (riz, pâtes, légumes) si le plat le permet.","Ajoutez un peu d’acide et de gras pour rééquilibrer la perception."], why:"Rien ne retire le sel dissous. La pomme de terre ajoutée au bouillon n’absorbe que l’eau salée qu’elle boit. Seule la dilution réduit vraiment la concentration.", next:"Salez par petites touches et souvenez-vous que les réductions concentrent le sel." },
+  { id:"acide", tag:"Acide", color:"--acide", name:"Trop acide", symptom:"Ça pique, ça agresse la langue.", steps:["Ajoutez du gras : crème, beurre, huile d’olive.","Ajoutez une pointe de sucre ou de miel, par petites quantités.","Pour une sauce tomate très acide, une pincée de bicarbonate neutralise une partie de l’acidité."], why:"Le gras et le sucre adoucissent la perception de l’acide. Le bicarbonate réagit chimiquement avec lui.", next:"Ajoutez citron et vinaigre progressivement, en fin de cuisson." },
+  { id:"piquant", tag:"Gras", color:"--gras", name:"Trop piquant", symptom:"Le piment couvre tout.", steps:["Ajoutez un produit laitier : yaourt, crème, lait de coco.","Augmentez le volume avec plus de base (légumes, riz, bouillon).","Une pointe de sucre et d’acide aident aussi."], why:"La capsaïcine se dissout dans le gras, pas dans l’eau. Boire de l’eau ne sert à rien ; le lait, si.", next:"Ajoutez le piment en deux temps et goûtez entre les deux." },
+  { id:"amer", tag:"Sel", color:"--sel", name:"Amer", symptom:"Arrière-goût amer persistant.", steps:["Ajoutez une pincée de sel : il masque l’amertume.","Ajoutez un peu de sucre ou un ingrédient doux (oignon confit, carotte).","Si l’ail ou les épices ont brûlé, recommencez cette étape : on ne rattrape pas le brûlé."], why:"Le sel et le sucre réduisent la perception de l’amertume. Le goût de brûlé, lui, ne se masque pas.", next:"Ajoutez l’ail après l’oignon et les épices moulues en fin de saisie." },
+  { id:"sucre", tag:"Acide", color:"--acide", name:"Trop sucré", symptom:"Écœurant, sans tenue.", steps:["Ajoutez de l’acide : citron, vinaigre, yaourt.","Ajoutez une pincée de sel.","Une touche amère (café, cacao, zeste) peut équilibrer un dessert."], why:"L’acide, le sel et l’amertume font contrepoids au sucre et donnent de la structure.", next:"Réduisez le sucre de 10 à 20 % dans les recettes : c’est rarement perceptible." },
+  { id:"liquide", tag:"Chaleur", color:"--chaleur", name:"Sauce trop liquide", symptom:"Elle ne nappe pas la cuillère.", steps:["Réduisez à feu moyen, sans couvercle.","Ou délayez 1 c. à café de fécule de maïs dans 1 c. à soupe d’eau froide, versez dans la sauce frémissante (pour environ 25 cl).","Ou, hors du feu, montez-la avec du beurre froid en dés."], why:"La réduction évapore l’eau. La fécule gonfle à la chaleur et épaissit. Le beurre forme une émulsion nappante.", next:"Gardez la sauce sur le feu plus longtemps et ajoutez le liquide progressivement." },
+  { id:"tranche", tag:"Gras", color:"--gras", name:"Sauce tranchée", symptom:"Le gras se sépare, la sauce graine.", steps:["Mettez 1 c. à soupe d’eau froide (ou un jaune d’œuf neuf pour une mayonnaise) dans un bol propre.","Incorporez la sauce tranchée petit à petit en fouettant vivement.","Pour une sauce au beurre, retirez-la du feu : elle a sans doute surchauffé."], why:"On recrée une émulsion en repartant d’une petite base stable et en réintroduisant le gras lentement.", next:"Ingrédients à même température, gras versé en filet, feu doux pour les sauces au beurre." },
+  { id:"sec", tag:"Chaleur", color:"--chaleur", name:"Viande sèche", symptom:"Elle est fibreuse et sans jus.", steps:["Tranchez finement, contre le sens des fibres.","Nappez de sauce, de jus de cuisson ou d’un beurre fondu aux herbes.","Pour une viande à mijoter : continuez la cuisson, elle finira par se détendre."], why:"Les fibres trop cuites ont expulsé leur eau. Trancher fin raccourcit les fibres, la sauce apporte l’humidité.", next:"Utilisez un thermomètre, sortez la viande quelques degrés avant et laissez-la reposer." },
+  { id:"gris", tag:"Chaleur", color:"--chaleur", name:"Pas de coloration", symptom:"La viande ou les légumes restent gris.", steps:["Retirez la moitié des morceaux et cuisez en deux fois.","Séchez la surface avec du papier absorbant.","Remettez la poêle à chauffer jusqu’à ce qu’une goutte d’eau y grésille aussitôt."], why:"La réaction de Maillard demande plus de 140 °C. Une surface humide ou une poêle surchargée reste bloquée vers 100 °C.", next:"Préchauffez la poêle, séchez les aliments et ne les tassez pas." },
+  { id:"mous", tag:"Chaleur", color:"--chaleur", name:"Légumes verts ternes", symptom:"Mous et vert olive.", steps:["Servez-les en purée ou en soupe : la couleur compte moins.","Relevez-les avec du beurre, du citron au dernier moment et des herbes fraîches."], why:"Une cuisson longue et l’acidité dégradent la chlorophylle, qui vire au vert olive.", next:"Blanchissez 2 à 4 min à l’eau bouillante salée, puis plongez dans l’eau glacée. Ajoutez l’acide au service." },
+  { id:"gluant", tag:"Chaleur", color:"--chaleur", name:"Riz ou pâtes collants", symptom:"Les grains forment un bloc.", steps:["Pour les pâtes : rincez rapidement à l’eau chaude et mélangez avec la sauce ou un filet d’huile.","Pour le riz : étalez-le sur une plaque pour qu’il sèche, puis faites-le sauter."], why:"L’amidon libéré en surface agit comme une colle. Le rinçage ou le séchage l’élimine.", next:"Beaucoup d’eau pour les pâtes, riz rincé avant cuisson, et pas trop de mélange." }
+];
+
+// ---------- État ----------
+const KEY = "sel-et-feu-v1";
+const today = () => new Date().toISOString().slice(0, 10);
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.done) return s; } catch (e) {}
+  return { done: {}, xp: 0, days: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+let state = load();
+let route = { tab: "learn" };
+let lessonState = null;
+let confirmReset = false;
+
+const lid = (t, i) => t.id + ":" + i;
+const doneIn = t => t.lessons.filter((_, i) => state.done[lid(t, i)]).length;
+const totalLessons = TRACKS.reduce((n, t) => n + t.lessons.length, 0);
+const doneCount = () => Object.keys(state.done).length;
+
+function streak() {
+  const set = new Set(state.days);
+  let n = 0; const d = new Date();
+  if (!set.has(today())) d.setDate(d.getDate() - 1);
+  while (set.has(d.toISOString().slice(0, 10))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function nextLesson() {
+  for (const t of TRACKS) for (let i = 0; i < t.lessons.length; i++) if (!state.done[lid(t, i)]) return { t, i };
+  return null;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const cvar = c => `style="--c: var(${c})"`;
+const plural = (n, w) => `${n} ${w}${n > 1 ? "s" : ""}`;
+
+// ---------- Rendu ----------
+const $main = document.getElementById("main"), $top = document.getElementById("top"), $tabs = document.getElementById("tabs");
+
+function go(r) { route = r; confirmReset = false; render(); window.scrollTo(0, 0); }
+
+function renderTop() {
+  const inner = route.view && route.view !== "home";
+  $top.innerHTML = `
+    ${inner ? `<button class="back" data-act="back" aria-label="Retour">${I.back}</button>` : ""}
+    <div class="brand">${inner ? "" : I.pan + "Sel &amp; Feu"}</div>
+    <span class="chip" title="Série de jours" style="color: var(--chaleur)">${I.flame}<span style="color: var(--ink)">${streak()}</span></span>
+    <span class="chip" title="Points d’expérience" style="color: var(--acide)">${I.star}<span style="color: var(--ink)">${state.xp} XP</span></span>`;
+}
+
+function renderTabs() {
+  const tabs = [["learn", "Apprendre", I.book], ["fix", "Réparer", I.wrench], ["me", "Progrès", I.user]];
+  $tabs.innerHTML = tabs.map(([id, label, ic]) =>
+    `<button class="tab" data-tab="${id}" ${route.tab === id ? 'aria-current="page"' : ""}>${ic}<span>${label}</span></button>`).join("");
+}
+
+function viewLearn() {
+  const n = nextLesson();
+  const groups = [...new Set(TRACKS.map(t => t.group))];
+  const trackCard = t => {
+    const d = doneIn(t), pct = Math.round(d / t.lessons.length * 100);
+    return `<button class="track" ${cvar(t.color)} data-track="${t.id}">
+      <span class="glyph" aria-hidden="true">${t.glyph}</span>
+      <span class="name">${t.name}</span>
+      <span class="meta">${d} / ${plural(t.lessons.length, "leçon")}</span>
+      <span class="bar"><i style="width:${pct}%"></i></span></button>`;
+  };
+  const trackRow = t => {
+    const d = doneIn(t);
+    return `<button class="row" ${cvar(t.color)} data-track="${t.id}">
+      <span class="glyph" aria-hidden="true">${t.glyph}</span>
+      <span class="txt"><span class="name">${t.name}</span><span class="meta">${d} / ${plural(t.lessons.length, "leçon")} · ${esc(t.desc)}</span></span>
+      <span class="end">${d === t.lessons.length ? `<span style="color:var(--c)">${I.check}</span>` : I.chev}</span></button>`;
+  };
+  return `
+    <section class="hello">
+      <h1>${doneCount() ? "On reprend ?" : "Apprenez à cuisiner sans recette."}</h1>
+      <p>Des leçons de 5 minutes sur le sel, l’acide, le gras et la chaleur, puis les cuisines du monde.</p>
+    </section>
+    ${n ? `<button class="next" data-lesson="${n.t.id}" data-i="${n.i}">
+      <span class="eyebrow">Prochaine leçon · ${n.t.name}</span>
+      <h2>${esc(n.t.lessons[n.i].title)}</h2>
+      <span class="go"><span>${n.t.lessons[n.i].steps.length} étapes · environ 5 min</span>${I.chev}</span></button>`
+      : `<div class="next"><span class="eyebrow">Bravo</span><h2>Toutes les leçons sont terminées.</h2></div>`}
+    ${groups.map(g => {
+      const ts = TRACKS.filter(t => t.group === g);
+      return `<section class="section"><h3>${g}</h3>
+        ${g === "Les quatre piliers" ? `<div class="pillars">${ts.map(trackCard).join("")}</div>` : `<div class="list">${ts.map(trackRow).join("")}</div>`}
+      </section>`;
+    }).join("")}`;
+}
+
+function viewTrack(t) {
+  const d = doneIn(t);
+  return `<div ${cvar(t.color)}>
+    <section class="track-head">
+      <span class="glyph" aria-hidden="true">${t.glyph}</span>
+      <h1>${t.name}</h1>
+      <p>${esc(t.desc)}</p>
+      <span class="bar"><i style="width:${Math.round(d / t.lessons.length * 100)}%"></i></span>
+    </section>
+    <div class="list">
+      ${t.lessons.map((l, i) => {
+        const done = state.done[lid(t, i)];
+        return `<button class="row lesson-row ${done ? "done" : ""}" data-lesson="${t.id}" data-i="${i}">
+          <span class="num">${done ? I.check : i + 1}</span>
+          <span class="txt"><span class="name">${esc(l.title)}</span><span class="meta">${done ? "Terminée · revoir" : l.steps.length + " étapes · 5 min"}</span></span>
+          <span class="end">${I.chev}</span></button>`;
+      }).join("")}
+    </div></div>`;
+}
+
+function viewLesson() {
+  const { t, i, step, picked, finished, gained } = lessonState;
+  const l = t.lessons[i];
+  if (finished) {
+    const n = nextLesson();
+    return `<div class="done-screen" ${cvar(t.color)}>
+      <div class="medal">${I.check}</div>
+      <h1>Leçon terminée</h1>
+      <p>${esc(l.title)} · ${t.name}</p>
+      <div class="xp">${gained ? "+" + gained + " XP" : "Déjà acquise"}</div>
+      <div class="actions">
+        ${n ? `<button class="cta" data-lesson="${n.t.id}" data-i="${n.i}">Leçon suivante : ${esc(n.t.lessons[n.i].title)}</button>` : ""}
+        <button class="cta ghost" data-track="${t.id}">Retour à « ${t.name} »</button>
+      </div></div>`;
+  }
+  const s = l.steps[step];
+  const bars = l.steps.map((_, k) => `<i class="${k <= step ? "on" : ""}"></i>`).join("");
+  let body, canNext = true;
+  if (s.k === "card") {
+    body = `<div class="card"><span class="kicker">${esc(l.title)}</span><h2>${s.h}</h2><p>${s.p}</p>${s.tip ? `<div class="tip">${s.tip}</div>` : ""}</div>`;
+  } else {
+    const answered = picked !== null;
+    canNext = answered;
+    body = `<div class="card"><span class="kicker">Question</span><h2>${s.q}</h2>
+      <div class="opts" role="group">${s.o.map((o, k) => {
+        let cls = "";
+        if (answered && k === s.a) cls = "right"; else if (answered && k === picked) cls = "wrong";
+        return `<button class="opt ${cls}" data-pick="${k}" ${answered ? "disabled" : ""}>${o}</button>`;
+      }).join("")}</div>
+      ${answered ? `<div class="feedback ${picked === s.a ? "ok" : "ko"}" role="status"><strong>${picked === s.a ? "Exact." : "Pas tout à fait."}</strong>${s.why}</div>` : ""}
+    </div>`;
+  }
+  const last = step === l.steps.length - 1;
+  return `<div class="lesson" ${cvar(t.color)}>
+    <div class="steps" aria-label="Étape ${step + 1} sur ${l.steps.length}">${bars}</div>
+    ${body}
+    <button class="cta" data-act="next" ${canNext ? "" : "disabled"}>${!canNext ? "Choisissez une réponse" : last ? "Terminer la leçon" : "Continuer"}</button>
+  </div>`;
+}
+
+function viewFixList() {
+  return `<section class="fix-intro">
+      <h1>Réparer un plat</h1>
+      <p>Choisissez le problème. Vous obtenez la correction, la raison, et comment l’éviter.</p>
+    </section>
+    <div class="problems">${FIXES.map(f => `<button class="problem" ${cvar(f.color)} data-fix="${f.id}">
+      <span class="tag">${f.tag}</span><span class="name">${f.name}</span></button>`).join("")}</div>`;
+}
+
+function viewFix(f) {
+  return `<div class="fix" ${cvar(f.color)}>
+    <h1>${f.name}</h1>
+    <p class="symptom">${f.symptom}</p>
+    <div class="block primary"><h3>Ce qu’il faut faire</h3><ol>${f.steps.map(s => `<li>${s}</li>`).join("")}</ol></div>
+    <div class="block"><h3>Pourquoi ça marche</h3><p>${f.why}</p></div>
+    <div class="block"><h3>La prochaine fois</h3><p>${f.next}</p></div>
+    <button class="cta ghost" data-act="back">Voir les autres problèmes</button>
+  </div>`;
+}
+
+function viewMe() {
+  const set = new Set(state.days);
+  const names = ["L", "M", "M", "J", "V", "S", "D"];
+  const now = new Date(); const dow = (now.getDay() + 6) % 7;
+  const week = names.map((nm, k) => {
+    const d = new Date(now); d.setDate(now.getDate() - dow + k);
+    return `<div class="day ${set.has(d.toISOString().slice(0, 10)) ? "on" : ""}"><i></i>${nm}</div>`;
+  }).join("");
+  return `<section class="fix-intro"><h1>Vos progrès</h1><p>Une leçon par jour suffit pour garder votre série.</p></section>
+    <div class="stats">
+      <div class="stat"><b>${doneCount()}</b><span>sur ${totalLessons} leçons</span></div>
+      <div class="stat"><b>${streak()}</b><span>${streak() > 1 ? "jours de suite" : "jour de suite"}</span></div>
+      <div class="stat"><b>${state.xp}</b><span>XP</span></div>
+    </div>
+    <section class="section"><h3>Cette semaine</h3><div class="week">${week}</div></section>
+    <section class="section"><h3>Par piste</h3><div class="list">${TRACKS.map(t => {
+      const d = doneIn(t);
+      return `<button class="row" ${cvar(t.color)} data-track="${t.id}"><span class="glyph" aria-hidden="true">${t.glyph}</span>
+        <span class="txt"><span class="name">${t.name}</span><span class="bar"><i style="width:${Math.round(d / t.lessons.length * 100)}%"></i></span></span>
+        <span class="meta" style="font-variant-numeric: tabular-nums">${d}/${t.lessons.length}</span></button>`;
+    }).join("")}</div></section>
+    <section class="section">
+      ${confirmReset ? `<div class="confirm"><p>Effacer toute votre progression ? Cette action est définitive.</p>
+        <div class="two"><button class="cta ghost" data-act="cancel-reset">Annuler</button><button class="cta danger" data-act="do-reset">Effacer</button></div></div>`
+      : `<button class="cta ghost" data-act="reset">Réinitialiser la progression</button>`}
+      <p class="note">Votre progression est enregistrée dans ce navigateur uniquement. Sans compte, sans publicité.</p>
+    </section>`;
+}
+
+function render() {
+  renderTop(); renderTabs();
+  let html;
+  const v = route.view || "home";
+  if (v === "track") html = viewTrack(TRACKS.find(t => t.id === route.id));
+  else if (v === "lesson") html = viewLesson();
+  else if (v === "fix") html = viewFix(FIXES.find(f => f.id === route.id));
+  else if (route.tab === "fix") html = viewFixList();
+  else if (route.tab === "me") html = viewMe();
+  else html = viewLearn();
+  $main.innerHTML = `<div class="view">${html}</div>`;
+}
+
+function startLesson(tid, i) {
+  const t = TRACKS.find(x => x.id === tid);
+  lessonState = { t, i: +i, step: 0, picked: null, finished: false, gained: 0 };
+  go({ tab: "learn", view: "lesson", from: route });
+}
+
+function finishLesson() {
+  const { t, i } = lessonState;
+  const id = lid(t, i);
+  if (!state.done[id]) { state.done[id] = today(); lessonState.gained = 10; state.xp += 10; }
+  if (!state.days.includes(today())) state.days.push(today());
+  save();
+  lessonState.finished = true;
+  render(); window.scrollTo(0, 0);
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if (d.tab) return go({ tab: d.tab });
+  if (d.track) return go({ tab: route.tab === "me" ? "me" : "learn", view: "track", id: d.track });
+  if (d.lesson) return startLesson(d.lesson, d.i);
+  if (d.fix) return go({ tab: "fix", view: "fix", id: d.fix });
+  if (d.pick !== undefined) { lessonState.picked = +d.pick; return render(); }
+  switch (d.act) {
+    case "back":
+      if (route.view === "lesson") return go({ tab: "learn", view: "track", id: lessonState.t.id });
+      return go({ tab: route.tab });
+    case "next": {
+      const l = lessonState.t.lessons[lessonState.i];
+      if (lessonState.step === l.steps.length - 1) return finishLesson();
+      lessonState.step++; lessonState.picked = null; render(); window.scrollTo(0, 0); return;
+    }
+    case "reset": confirmReset = true; return render();
+    case "cancel-reset": confirmReset = false; return render();
+    case "do-reset": state = { done: {}, xp: 0, days: [] }; save(); confirmReset = false; return render();
+  }
+});
+
+render();
+</script>
