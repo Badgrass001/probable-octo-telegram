@@ -157,8 +157,11 @@ function startTracking() {
   if (!('geolocation' in navigator)) { toast('La géolocalisation n’est pas disponible sur cet appareil.'); return; }
   state.following = true;
   $('#btn-locate').classList.add('active');
-  setPill('search', 'Recherche de votre position…');
-  if (state.lastPos) centerOnMe();
+  if (state.lastPos) {
+    const inside = in16(state.lastPos.lat, state.lastPos.lon);
+    setPill(inside ? 'ok' : 'warn', inside ? 'Suivi de votre promenade' : 'Hors du 16e');
+    centerOnMe();
+  } else setPill('search', 'Recherche de votre position…');
   if (state.watchId != null) return;
   state.watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
     enableHighAccuracy: true, maximumAge: 4000, timeout: 20000,
