@@ -1,6 +1,7 @@
 import { $, $$, norm, stripParis, isVoieTitle, escapeHtml, distance, store, debounce, sentences, formatDate } from './util.js';
-import { loadVoieList, resolveTitle, fetchArticle, fetchSummary, searchVoies, wikiUrl, KINDS } from './wiki.js';
-import { reverseGeocode, fetchGeometry, CENTER_16, in16 } from './geo.js';
+import { loadVoieList, resolveTitle, fetchArticle, fetchSummary, searchVoies, wikiUrl, KINDS, geoSearch, fetchPlaces } from './wiki.js';
+import { reverseGeocode, fetchGeometry, walkingRoute, CENTER_16, in16 } from './geo.js';
+import { PARCOURS } from './parcours.js';
 
 /* =================================================================== Données éditoriales */
 
@@ -51,6 +52,9 @@ const ICONS = {
   chevron: '<path d="m9 6 6 6-6 6"/>',
   lamp: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
   steps: '<path d="M12 2.5 5 20.5l7-3.2 7 3.2z"/>',
+  route: '<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.8"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  walk: '<circle cx="13" cy="4.5" r="1.8"/><path d="m9 21 2.5-6.5L14 17v4M7 12l2.5-4.5L13 8l2.5 3.5H18M11.5 14.5 13 8"/>',
   book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>',
 };
 const icon = (name, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ICONS.autre}</svg>`;
@@ -75,12 +79,22 @@ const state = {
   journal: store.get('journal', {}),
   userPanned: 0,
   article: null,
+  places: new Map(),        // titre -> lieu remarquable
+  placeMarkers: new Map(),
+  placesLayer: null,
+  showPlaces: store.get('places', true),
+  placesFetchedAt: null,    // position du dernier chargement autour de l'utilisateur
+  alerted: new Set(),       // lieux déjà signalés pendant cette session
+  heading: null,            // cap en degrés (0 = nord)
+  compass: false,
+  full: false,
+  route: null,              // parcours en cours
 };
 
 /* =================================================================== Carte */
 
 function initMap() {
-  const map = L.map('map', { zoomControl: false, attributionControl: true, tap: true })
+  const map = L.map('map', { zoomControl: false, attributionControl: false, tap: true })
     .setView(CENTER_16, 14);
   L.control.zoom({ position: 'bottomleft' }).addTo(map);
   state.map = map;
@@ -89,9 +103,14 @@ function initMap() {
 
   state.streetLayer = L.layerGroup().addTo(map);
   state.pinLayer = L.layerGroup().addTo(map);
+  state.routeLayer = L.layerGroup().addTo(map);
+  state.placesLayer = L.layerGroup();
 
-  map.on('click', e => exploreAt(e.latlng.lat, e.latlng.lng));
+  map.on('click', e => { if (!state.compass) exploreAt(e.latlng.lat, e.latlng.lng); });
   map.on('dragstart', () => { state.userPanned = Date.now(); });
+  map.on('moveend', debounce(loadPlacesInView, 500));
+  map.on('zoomend', syncPlacesLayer);
+  addEventListener('resize', debounce(layoutMap, 150));
 }
 
 function setTiles() {
@@ -178,14 +197,24 @@ async function onPosition(p) {
   const ll = [pos.lat, pos.lon];
   if (!state.me) {
     state.meHalo = L.circle(ll, { radius: pos.acc, color: '#3b6fd8', weight: 1, fillOpacity: .12, interactive: false }).addTo(state.map);
-    state.me = L.marker(ll, { icon: L.divIcon({ className: 'me', html: '<span></span>', iconSize: [20, 20] }), interactive: false, zIndexOffset: 1000 }).addTo(state.map);
+    state.me = L.marker(ll, { icon: L.divIcon({ className: 'me', html: '<i class="cone"></i><span></span>', iconSize: [20, 20] }), interactive: false, zIndexOffset: 1000 }).addTo(state.map);
+    applyHeading();
   } else {
     state.me.setLatLng(ll); state.meHalo.setLatLng(ll).setRadius(pos.acc);
   }
 
+  // Cap GPS (quand on marche) si la boussole du téléphone n'est pas disponible.
+  if (p.coords.heading != null && !isNaN(p.coords.heading) && (p.coords.speed || 0) > 0.6 && !state.compassLive) {
+    state.heading = p.coords.heading; applyHeading();
+  }
+
   if (!state.following) return;
   if (first) centerOnMe();
+  else if (state.compass) state.map.setView(ll, state.map.getZoom(), { animate: false });
   else if (Date.now() - state.userPanned > 8000) state.map.panTo(ll, { animate: true });
+
+  loadPlacesAround(pos);
+  checkProximity(pos);
 
   const inside = in16(pos.lat, pos.lon);
   setPill(inside ? 'ok' : 'warn', inside
@@ -269,6 +298,7 @@ async function loadStreet({ name, title = null, source = 'search', is16 = null, 
     state.article = art;
     renderArticle(art, { source, is16 });
     document.body.classList.add('has-street');
+    updateStreetBar();
     record(art, source);
     if (source !== 'gps' && source !== 'map' && art.coords) dropPin(art.coords.lat, art.coords.lon);
     geometry(name || art.name, source !== 'gps', token, art.coords);
@@ -342,11 +372,15 @@ function renderWelcome() {
         </button></li>`).join('')}
     </ul>
     <button class="btn ghost wide" id="w-random">${icon('dice')} Une voie au hasard</button>
+
+    <h2 class="kicker">Parcours thématiques</h2>
+    <ul class="routes">${PARCOURS.map(routeCard).join('')}</ul>
     <p class="credits">Contenus issus de <a href="https://fr.wikipedia.org" target="_blank" rel="noopener">Wikipédia</a> (licence CC BY-SA) · Cartographie © OpenStreetMap.</p>
   </div>`;
   $('#w-locate').onclick = startTracking;
   $('#w-search').onclick = openSearch;
   $('#w-random').onclick = randomVoie;
+  bindRouteCards(panel());
   $$('.coeur button', panel()).forEach(b => b.onclick = () => { stopFollowing(); loadStreet({ title: b.dataset.title, source: 'search' }); });
 }
 
@@ -521,7 +555,7 @@ function buildDidYouKnow(art) {
 
 /* =================================================================== Aperçu des liens */
 
-async function openPreview(title, href) {
+async function openPreview(title, href, place = null) {
   const sheet = $('#sheet'), content = $('#sheet-content');
   content.innerHTML = `<div class="sheet-body"><h3>${escapeHtml(title)}</h3><div class="sk sk-line"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>`;
   $('#sheet-backdrop').hidden = false; sheet.hidden = false;
@@ -534,13 +568,23 @@ async function openPreview(title, href) {
         ${s.thumbnail ? `<img class="sheet-img" src="${escapeHtml(s.thumbnail.source)}" alt="">` : ''}
         <h3>${escapeHtml(s.title)}</h3>
         ${s.description ? `<p class="sheet-desc">${escapeHtml(s.description)}</p>` : ''}
+        ${place?.lat != null && state.lastPos ? `<p class="sheet-dist">${icon('walk')} à ${fmtKm(distance(state.lastPos, place))} de vous</p>` : ''}
         <p class="sheet-extract">${escapeHtml(s.extract || '')}</p>
         <div class="link-row">
           ${voie ? `<button class="btn primary" id="sheet-explore">Explorer cette voie</button>` : ''}
           <a class="btn ${voie ? 'ghost' : 'primary'}" href="${escapeHtml(s.content_urls?.mobile?.page || href)}" target="_blank" rel="noopener">${icon('wiki')} Lire sur Wikipédia</a>
+          ${place?.lat != null ? `
+          <button class="btn ghost" id="sheet-map">${icon('situation')} Voir sur la carte</button>
+          <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${place.lat},${place.lon}">${icon('walk')} Y aller à pied</a>` : ''}
         </div>
       </div>`;
     if (voie) $('#sheet-explore').onclick = () => { closeSheet(); stopFollowing(); loadStreet({ title: s.title, source: 'search' }); };
+    const mapBtn = $('#sheet-map');
+    if (mapBtn) mapBtn.onclick = () => {
+      closeSheet();
+      if (!state.compass) { stopFollowing(); state.map.flyTo([place.lat, place.lon], 18, { duration: .7 }); }
+      if (document.body.classList.contains('panel-expanded')) $('#grabber').click();
+    };
   } catch {
     content.innerHTML = `<div class="sheet-body"><h3>${escapeHtml(title)}</h3><p>Aperçu indisponible.</p><a class="btn primary" href="${escapeHtml(href)}" target="_blank" rel="noopener">Ouvrir sur Wikipédia</a></div>`;
   }
@@ -709,8 +753,12 @@ function setVoice(on) {
 
 /* =================================================================== Toast */
 
-let toastTimer;
-function toast(msg, { action, onAction, duration = 4500 } = {}) {
+let toastTimer, toastBusyUntil = 0, toastQueue = [];
+function toast(msg, opts = {}) {
+  // Un message simple ne remplace pas une alerte (avec bouton) encore récente : il attend son tour.
+  if (!opts.action && Date.now() < toastBusyUntil) { toastQueue.push([msg, opts]); return; }
+  const { action, onAction, duration = 4500 } = opts;
+  if (action) toastBusyUntil = Date.now() + Math.min(duration, 6000);
   const t = $('#toast');
   t.innerHTML = `<span>${escapeHtml(msg)}</span>${action ? `<button>${escapeHtml(action)}</button>` : ''}`;
   t.hidden = false;
@@ -722,7 +770,403 @@ function toast(msg, { action, onAction, duration = 4500 } = {}) {
 function hideToast() {
   const t = $('#toast');
   t.classList.remove('show');
-  setTimeout(() => { t.hidden = true; }, 250);
+  toastBusyUntil = 0;
+  setTimeout(() => {
+    t.hidden = true;
+    const next = toastQueue.shift();
+    if (next) toast(...next);
+  }, 250);
+}
+
+/* =================================================================== Lieux remarquables sur la carte */
+
+const PLACES_MIN_ZOOM = 15;
+
+function placeIcon(p) {
+  return L.divIcon({
+    className: 'poi',
+    html: `<span class="poi-dot">${p.thumb ? `<img src="${escapeHtml(p.thumb)}" alt="" loading="lazy">` : icon('batiments')}</span>`,
+    iconSize: [34, 34], iconAnchor: [17, 17],
+  });
+}
+
+function addPlaces(list) {
+  for (const p of list) {
+    if (state.places.has(p.title)) continue;
+    state.places.set(p.title, p);
+    const m = L.marker([p.lat, p.lon], { icon: placeIcon(p), title: p.title, riseOnHover: true, keyboard: true })
+      .on('click', () => openPreview(p.title, wikiUrl(p.title), p));
+    state.placeMarkers.set(p.title, m);
+    m.addTo(state.placesLayer);
+  }
+}
+
+function syncPlacesLayer() {
+  const show = state.showPlaces && state.map.getZoom() >= PLACES_MIN_ZOOM;
+  if (show && !state.map.hasLayer(state.placesLayer)) state.placesLayer.addTo(state.map);
+  if (!show && state.map.hasLayer(state.placesLayer)) state.map.removeLayer(state.placesLayer);
+}
+
+async function loadPlacesInView() {
+  syncPlacesLayer();
+  if (!state.showPlaces || state.map.getZoom() < PLACES_MIN_ZOOM) return;
+  const c = state.map.getCenter();
+  const b = state.map.getBounds();
+  const radius = c.distanceTo(b.getNorthEast());
+  try { addPlaces(await geoSearch(c.lat, c.lng, radius, 100)); } catch (e) { console.warn(e); }
+}
+
+/** Charge les lieux autour de l'utilisateur (pour les alertes), même si la carte regarde ailleurs. */
+async function loadPlacesAround(pos) {
+  if (state.placesFetchedAt && distance(state.placesFetchedAt, pos) < 250) return;
+  state.placesFetchedAt = pos;
+  try {
+    addPlaces(await geoSearch(pos.lat, pos.lon, 600, 100));
+    if (state.following && state.lastPos) checkProximity(state.lastPos);
+  } catch (e) { state.placesFetchedAt = null; }
+}
+
+function setShowPlaces(on) {
+  state.showPlaces = on;
+  store.set('places', on);
+  $('#btn-places').setAttribute('aria-pressed', String(on));
+  if (on) loadPlacesInView(); else syncPlacesLayer();
+}
+
+/* =================================================================== Alertes de proximité */
+
+function checkProximity(pos) {
+  const acc = Math.min(pos.acc || 30, 60);
+  // Étapes du parcours en cours
+  if (state.route) {
+    state.route.stops.forEach((s, i) => {
+      if (s.lat == null || state.route.reached.has(i)) return;
+      if (distance(pos, s) <= Math.max(45, acc)) {
+        state.route.reached.add(i);
+        updateRouteBar();
+        refreshStopMarkers();
+        alertNear(`Étape ${i + 1} · ${stripParis(s.title)}`, s.note, () => openStop(s), `Étape ${i + 1} : ${stripParis(s.title)}. ${s.note}`);
+      }
+    });
+  }
+  // Lieux remarquables
+  let best = null, bestD = Infinity;
+  for (const p of state.places.values()) {
+    if (state.alerted.has(p.title)) continue;
+    const d = distance(pos, p);
+    if (d < bestD) { best = p; bestD = d; }
+  }
+  if (best && bestD <= Math.max(35, acc)) {
+    state.alerted.add(best.title);
+    alertNear(`Vous passez devant : ${best.title}`, best.description, () => openPreview(best.title, wikiUrl(best.title), best),
+      `Vous passez devant ${best.title}${best.description ? ', ' + best.description : ''}.`);
+  }
+}
+
+let lastAlert = 0;
+function alertNear(title, sub, onOpen, speech) {
+  if (Date.now() - lastAlert < 8000) return; // pas plus d'une alerte toutes les 8 s
+  lastAlert = Date.now();
+  navigator.vibrate?.([120, 80, 120]);
+  toast(title + (sub ? ` — ${sub}` : ''), { action: 'Découvrir', onAction: onOpen, duration: 10000 });
+  if (state.voice) speak(speech || title);
+}
+
+/* =================================================================== Parcours thématiques */
+
+function routeCard(r) {
+  return `<li><button class="route-card" data-route="${r.id}" style="--rc:${r.color}">
+    <span class="route-theme">${escapeHtml(r.theme)} · ${r.stops.length} étapes</span>
+    <span class="route-title">${escapeHtml(r.title)}</span>
+    <span class="route-sub">${escapeHtml(r.subtitle)}</span>
+    ${icon('chevron', 'chev')}
+  </button></li>`;
+}
+
+function bindRouteCards(root) {
+  $$('.route-card', root).forEach(b => b.onclick = () => showRoute(b.dataset.route));
+}
+
+function renderParcoursList() {
+  $('#panel-scroll').scrollTop = 0;
+  panel().innerHTML = `
+    <div class="welcome">
+      <p class="eyebrow">Parcours thématiques</p>
+      <h1 class="display">Suivez le guide,<br><em>étape par étape.</em></h1>
+      <p class="lead">Chaque parcours relie des lieux qui racontent une même histoire. Lancez-le : la carte trace l’itinéraire à pied, et votre téléphone vibre à l’approche de chaque étape.</p>
+      <ul class="routes">${PARCOURS.map(routeCard).join('')}</ul>
+      <button class="btn ghost wide" id="p-home">Retour à l’accueil</button>
+    </div>`;
+  bindRouteCards(panel());
+  $('#p-home').onclick = renderWelcome;
+  openPanelIfMobile();
+}
+
+const fmtKm = m => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+const fmtMin = s => { const m = Math.round(s / 60 / 5) * 5; return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`; };
+
+/** Ordonne les étapes au plus court (voisin le plus proche), en partant de la première. */
+function orderStops(stops) {
+  const located = stops.filter(s => s.lat != null);
+  const rest = stops.filter(s => s.lat == null);
+  if (located.length < 3) return [...located, ...rest];
+  const out = [located.shift()];
+  while (located.length) {
+    const last = out[out.length - 1];
+    let k = 0;
+    located.forEach((s, i) => { if (distance(last, s) < distance(last, located[k])) k = i; });
+    out.push(located.splice(k, 1)[0]);
+  }
+  return [...out, ...rest];
+}
+
+async function prepareRoute(def) {
+  const stops = orderStops(await fetchPlaces(def.stops));
+  const pts = stops.filter(s => s.lat != null);
+  let path = null;
+  try { path = pts.length > 1 ? await walkingRoute(pts) : null; } catch (e) { console.warn(e); }
+  if (!path) {
+    let d = 0;
+    for (let i = 1; i < pts.length; i++) d += distance(pts[i - 1], pts[i]) * 1.3;
+    path = { line: null, distance: d, duration: d / (4.5 / 3.6) };
+  }
+  return { def, stops, path };
+}
+
+const routeCache = new Map();
+async function showRoute(id) {
+  const def = PARCOURS.find(r => r.id === id);
+  if (!def) return;
+  stopFollowing();
+  $('#panel-scroll').scrollTop = 0;
+  panel().innerHTML = `
+    <div class="route-head" style="--rc:${def.color}"><p class="eyebrow">${escapeHtml(def.theme)}</p><h1 class="display">${escapeHtml(def.title)}</h1><p class="lead">${escapeHtml(def.intro)}</p></div>
+    <div class="skeleton"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>`;
+  openPanelIfMobile();
+  try {
+    if (!routeCache.has(id)) routeCache.set(id, prepareRoute(def));
+    const r = await routeCache.get(id);
+    renderRoute(r);
+    drawRoute(r, true);
+  } catch (e) {
+    routeCache.delete(id);
+    renderMessage('Parcours indisponible', 'Impossible de charger les étapes. Vérifiez votre connexion et réessayez.', () => showRoute(id));
+  }
+}
+
+function renderRoute(r) {
+  const { def, stops, path } = r;
+  const active = state.route?.def.id === def.id;
+  panel().innerHTML = `
+    <article class="route" style="--rc:${def.color}">
+      <div class="route-head">
+        <p class="eyebrow">${escapeHtml(def.theme)} · parcours</p>
+        <h1 class="display">${escapeHtml(def.title)}</h1>
+        <p class="lead">${escapeHtml(def.intro)}</p>
+      </div>
+      <div class="route-metrics">
+        <span>${icon('walk')}<strong>${fmtKm(path.distance)}</strong></span>
+        <span>${icon('clock')}<strong>${fmtMin(path.duration)}</strong><small>sans les arrêts</small></span>
+        <span>${icon('situation')}<strong>${stops.length}</strong><small>étapes</small></span>
+      </div>
+      <div class="cta-row">
+        ${active
+          ? `<button class="btn primary" id="r-stop">Quitter le parcours</button>`
+          : `<button class="btn primary" id="r-start">${icon('steps')} Démarrer le parcours</button>`}
+        <a class="btn ghost" target="_blank" rel="noopener" href="${gmapsUrl(stops)}">${icon('map')} Ouvrir dans Google Maps</a>
+      </div>
+      ${path.line ? '' : '<p class="hint-line">Itinéraire détaillé indisponible : la carte relie les étapes à vol d’oiseau.</p>'}
+      <ol class="stops">
+        ${stops.map((s, i) => `
+          <li class="stop ${state.route?.def.id === def.id && state.route.reached.has(i) ? 'done' : ''}">
+            <button data-i="${i}">
+              <span class="stop-n">${i + 1}</span>
+              <span class="stop-body">
+                <strong>${escapeHtml(stripParis(s.title))}</strong>
+                <span>${escapeHtml(s.note)}</span>
+              </span>
+              ${s.thumb ? `<img src="${escapeHtml(s.thumb)}" alt="" loading="lazy">` : ''}
+            </button>
+          </li>`).join('')}
+      </ol>
+      <p class="credits">Photos et fiches : Wikipédia (CC BY-SA). Itinéraire : OpenStreetMap / OSRM. Certaines étapes sont des voies privées : on les admire depuis la grille.</p>
+      <button class="btn ghost wide" id="r-all">Tous les parcours</button>
+    </article>`;
+  $$('.stop button', panel()).forEach(b => b.onclick = () => {
+    const s = stops[+b.dataset.i];
+    if (s.lat != null) state.map.flyTo([s.lat, s.lon], 17, { duration: .6 });
+    openStop(s);
+  });
+  $('#r-start')?.addEventListener('click', () => startRoute(r));
+  $('#r-stop')?.addEventListener('click', () => { endRoute(); renderRoute(r); });
+  $('#r-all').onclick = renderParcoursList;
+}
+
+function gmapsUrl(stops) {
+  const pts = stops.filter(s => s.lat != null).map(s => `${s.lat},${s.lon}`);
+  const dest = pts.pop(), origin = pts.shift();
+  return `https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=${origin}&destination=${dest}${pts.length ? '&waypoints=' + encodeURIComponent(pts.join('|')) : ''}`;
+}
+
+function openStop(s) {
+  if (isVoieTitle(s.title)) { stopFollowing(); loadStreet({ title: s.title, source: 'search' }); }
+  else openPreview(s.title, wikiUrl(s.title), s);
+}
+
+function drawRoute(r, fit) {
+  state.routeLayer.clearLayers();
+  const color = r.def.color;
+  const pts = r.stops.filter(s => s.lat != null).map(s => [s.lat, s.lon]);
+  const line = r.path.line || pts;
+  L.polyline(line, { color: '#fff', weight: 9, opacity: .9, interactive: false }).addTo(state.routeLayer);
+  L.polyline(line, { color, weight: 5, opacity: .95, dashArray: r.path.line ? null : '2 10', lineCap: 'round', interactive: false }).addTo(state.routeLayer);
+  state.stopMarkers = r.stops.map((s, i) => s.lat == null ? null : L.marker([s.lat, s.lon], {
+    icon: stopIcon(i, color, false), zIndexOffset: 500, title: stripParis(s.title),
+  }).on('click', () => openStop(s)).addTo(state.routeLayer));
+  refreshStopMarkers();
+  if (fit && pts.length) state.map.flyToBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, duration: .8 });
+}
+
+const stopIcon = (i, color, done) => L.divIcon({
+  className: 'stop-marker' + (done ? ' done' : ''),
+  html: `<span class="upright" style="--rc:${color}">${done ? '✓' : i + 1}</span>`,
+  iconSize: [30, 30], iconAnchor: [15, 15],
+});
+
+function refreshStopMarkers() {
+  if (!state.route || !state.stopMarkers) return;
+  state.stopMarkers.forEach((m, i) => m?.setIcon(stopIcon(i, state.route.def.color, state.route.reached.has(i))));
+}
+
+function startRoute(r) {
+  state.route = { ...r, reached: new Set() };
+  drawRoute(r, false);
+  updateRouteBar();
+  renderRoute(r);
+  startTracking();
+  toast('Parcours lancé : votre téléphone vibrera à l’approche de chaque étape.');
+  if (state.voice) speak(`Parcours ${r.def.title}. ${r.stops.length} étapes. Première étape : ${stripParis(r.stops[0].title)}.`);
+}
+
+function endRoute() {
+  state.route = null;
+  state.stopMarkers = null;
+  state.routeLayer.clearLayers();
+  updateRouteBar();
+}
+
+function updateRouteBar() {
+  const bar = $('#route-bar');
+  if (!state.route) { bar.hidden = true; return; }
+  const { stops, reached, def } = state.route;
+  const next = stops.findIndex((s, i) => !reached.has(i));
+  bar.hidden = false;
+  bar.style.setProperty('--rc', def.color);
+  $('.route-bar-txt', bar).innerHTML = next < 0
+    ? `<strong>Parcours terminé ✦</strong> ${escapeHtml(def.title)}`
+    : `<strong>Étape ${next + 1}/${stops.length}</strong> ${escapeHtml(stripParis(stops[next].title))}`;
+  if (next < 0 && reached.size === stops.length && !state.route.done) {
+    state.route.done = true;
+    setTimeout(() => toast(`Bravo, parcours « ${def.title} » terminé !`, { duration: 7000 }), 1500);
+  }
+}
+
+/* =================================================================== Boussole et carte orientée */
+
+function applyHeading() {
+  const h = state.heading;
+  const el = state.me?.getElement();
+  if (el) {
+    el.classList.toggle('has-heading', h != null);
+    if (h != null) el.style.setProperty('--h', `${h}deg`);
+  }
+  const mapEl = $('#map');
+  const bearing = state.compass && h != null ? h : 0;
+  mapEl.style.setProperty('--bearing', `${bearing}deg`);
+  mapEl.style.transform = state.compass ? `rotate(${-bearing}deg)` : '';
+  $('#btn-compass .needle').style.transform = `rotate(${-bearing}deg)`;
+}
+
+/** Agrandit la carte à la diagonale de son cadre pour qu'aucun coin ne soit vide une fois tournée. */
+function layoutMap() {
+  const mapEl = $('#map'), wrap = $('.map-wrap');
+  if (state.compass) {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const d = Math.ceil(Math.hypot(w, h));
+    Object.assign(mapEl.style, { inset: 'auto', width: d + 'px', height: d + 'px', left: (w - d) / 2 + 'px', top: (h - d) / 2 + 'px' });
+  } else {
+    Object.assign(mapEl.style, { inset: '', width: '', height: '', left: '', top: '' });
+  }
+  state.map.invalidateSize({ pan: false });
+  if (state.compass && state.lastPos) state.map.setView([state.lastPos.lat, state.lastPos.lon], state.map.getZoom(), { animate: false });
+}
+
+let smoothed = null;
+function onOrientation(e) {
+  let h = null;
+  if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;
+  else if ((e.absolute || e.type === 'deviceorientationabsolute') && e.alpha != null) h = 360 - e.alpha;
+  if (h == null || isNaN(h)) return;
+  h = (h + (screen.orientation?.angle || 0) + 360) % 360;
+  state.compassLive = true;
+  if (smoothed == null) smoothed = h;
+  else smoothed = (smoothed + ((((h - smoothed) % 360) + 540) % 360 - 180) * 0.2 + 360) % 360;
+  state.heading = smoothed;
+  if (!state.headingFrame) state.headingFrame = requestAnimationFrame(() => { state.headingFrame = null; applyHeading(); });
+}
+
+async function listenOrientation() {
+  if (state.orientationOn) return true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      if (await DeviceOrientationEvent.requestPermission() === 'denied') return false;
+    }
+  } catch { return false; }
+  const evt = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  addEventListener(evt, onOrientation, true);
+  state.orientationOn = true;
+  return true;
+}
+
+async function setCompass(on) {
+  if (on) {
+    const ok = await listenOrientation();
+    if (!ok) { toast('La boussole n’a pas été autorisée. La carte s’orientera d’après votre direction de marche.'); }
+    state.compass = true;
+    state.map.dragging.disable();
+    startTracking();
+    setTimeout(() => { if (!state.compassLive && state.heading == null) toast('Boussole indisponible sur cet appareil : la carte s’orientera dès que vous marcherez.'); }, 2500);
+  } else {
+    state.compass = false;
+    state.map.dragging.enable();
+  }
+  document.body.classList.toggle('compass-on', state.compass);
+  $('#btn-compass').setAttribute('aria-pressed', String(state.compass));
+  layoutMap();
+  applyHeading();
+}
+
+/* =================================================================== Carte plein écran */
+
+function setFull(on) {
+  state.full = on;
+  document.body.classList.toggle('map-full', on);
+  $('#btn-full').setAttribute('aria-pressed', String(on));
+  $('#btn-full').setAttribute('aria-label', on ? 'Quitter le plein écran' : 'Carte en plein écran');
+  updateStreetBar();
+  setTimeout(layoutMap, 320);
+  if (on && !state.following && !state.route) startTracking();
+}
+
+function updateStreetBar() {
+  const bar = $('#street-bar');
+  if (!state.full || !state.current) { bar.hidden = true; return; }
+  bar.hidden = false;
+  $('.sb-name', bar).textContent = state.current.name;
+}
+
+function openPanelIfMobile() {
+  if (state.full) setFull(false);
 }
 
 /* =================================================================== Démarrage */
@@ -734,6 +1178,16 @@ function bind() {
   };
   $('#btn-search').onclick = openSearch;
   $('#btn-carnet').onclick = openCarnet;
+  $('#btn-parcours').onclick = renderParcoursList;
+  $('#btn-places').onclick = () => {
+    setShowPlaces(!state.showPlaces);
+    if (state.showPlaces && state.map.getZoom() < PLACES_MIN_ZOOM) toast('Zoomez sur la carte pour voir les lieux remarquables.');
+  };
+  $('#btn-compass').onclick = () => setCompass(!state.compass);
+  $('#btn-full').onclick = () => setFull(!state.full);
+  $('#sb-read').onclick = () => setFull(false);
+  $('#route-bar-close').onclick = () => { endRoute(); toast('Parcours quitté.'); };
+  $('#route-bar .route-bar-txt').onclick = () => { if (state.route) { setFull(false); showRoute(state.route.def.id); } };
   $('#btn-voice').onclick = () => {
     setVoice(!state.voice);
     toast(state.voice ? 'Guide vocal activé : je vous raconterai chaque nouvelle rue.' : 'Guide vocal désactivé.');
@@ -765,21 +1219,21 @@ function bind() {
   $('#grabber').onclick = () => {
     const ex = document.body.classList.toggle('panel-expanded');
     $('#grabber').setAttribute('aria-label', ex ? 'Réduire le panneau' : 'Agrandir le panneau');
-    setTimeout(() => state.map.invalidateSize(), 320);
+    setTimeout(layoutMap, 320);
   };
   let lastY = 0;
   $('#panel-scroll').addEventListener('scroll', e => {
     const y = e.target.scrollTop;
     if (matchMedia('(max-width: 820px)').matches && y > 120 && y > lastY && !document.body.classList.contains('panel-expanded')) {
       document.body.classList.add('panel-expanded');
-      setTimeout(() => state.map.invalidateSize(), 320);
+      setTimeout(layoutMap, 320);
     }
     lastY = y;
   }, { passive: true });
   $('.map-wrap').addEventListener('click', () => {
     if (document.body.classList.contains('panel-expanded') && matchMedia('(max-width: 820px)').matches) {
       document.body.classList.remove('panel-expanded');
-      setTimeout(() => state.map.invalidateSize(), 320);
+      setTimeout(layoutMap, 320);
     }
   }, true);
 }
@@ -788,6 +1242,7 @@ function init() {
   initMap();
   bind();
   setVoice(state.voice);
+  setShowPlaces(state.showPlaces);
   updateCount();
   renderWelcome();
   loadVoieList(); // préchargement

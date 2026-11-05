@@ -1,7 +1,7 @@
 // Service worker : l'application fonctionne hors connexion pour tout ce qui a déjà été consulté.
-const VERSION = 'flaneur-v1';
+const VERSION = 'flaneur-v2';
 const SHELL = [
-  './', 'index.html', 'css/style.css', 'js/app.js', 'js/wiki.js', 'js/geo.js', 'js/util.js',
+  './', 'index.html', 'css/style.css', 'js/app.js', 'js/wiki.js', 'js/geo.js', 'js/util.js', 'js/parcours.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

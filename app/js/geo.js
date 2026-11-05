@@ -48,3 +48,19 @@ export async function fetchGeometry(name) {
 }
 
 export const in16 = (lat, lon) => lat > BBOX_16.s && lat < BBOX_16.n && lon > BBOX_16.w && lon < BBOX_16.e;
+
+/** Itinéraire piéton passant par les points donnés (OSRM, profil piéton d'openstreetmap.de). */
+export async function walkingRoute(points) {
+  const coords = points.map(p => `${p.lon.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
+  const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coords}?overview=full&geometries=geojson&steps=false`);
+  if (!r.ok) throw new Error('Calcul d’itinéraire indisponible');
+  const j = await r.json();
+  const route = j.routes?.[0];
+  if (!route) throw new Error('Aucun itinéraire');
+  return {
+    line: route.geometry.coordinates.map(([lon, lat]) => [lat, lon]),
+    distance: route.distance,
+    // OSRM sous-estime souvent la durée à pied : on compte 4,5 km/h.
+    duration: route.distance / (4.5 / 3.6),
+  };
+}

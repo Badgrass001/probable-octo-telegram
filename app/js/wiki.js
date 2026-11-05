@@ -307,3 +307,58 @@ export async function searchVoies(q) {
     .catch(() => null);
   return (j?.[1] || []).filter(isVoieTitle);
 }
+
+/* ---------------------------------------------------------------- Lieux géolocalisés */
+
+const NOT_A_PLACE = /\b(station|gare|m[ée]tro|RER|arrondissement|quartier|ligne \d|bus|tramway|commune)\b|^Paris$/i;
+
+/** Articles géolocalisés (monuments, musées, hôtels particuliers…) autour d'un point. */
+export async function geoSearch(lat, lon, radius = 800, limit = 80) {
+  const j = await api({
+    action: 'query', generator: 'geosearch',
+    ggscoord: `${lat}|${lon}`, ggsradius: Math.round(Math.min(10000, Math.max(10, radius))), ggslimit: limit, ggsnamespace: 0,
+    prop: 'coordinates|pageimages|description', piprop: 'thumbnail', pithumbsize: 240,
+  });
+  return (j.query?.pages || [])
+    .filter(p => p.coordinates?.[0] && !isVoieTitle(p.title)
+      && !NOT_A_PLACE.test(p.title) && !/station|voie|commune|arrondissement|quartier/i.test(p.description || ''))
+    .map(p => ({
+      title: p.title,
+      lat: p.coordinates[0].lat, lon: p.coordinates[0].lon,
+      thumb: p.thumbnail?.source || null,
+      description: p.description || '',
+    }));
+}
+
+/** Coordonnées, photo et description d'une liste d'articles (étapes d'un parcours). */
+export async function fetchPlaces(stops) {
+  const j = await api({
+    action: 'query', titles: stops.map(s => s.title).join('|'), redirects: 1,
+    prop: 'coordinates|pageimages|description', piprop: 'thumbnail', pithumbsize: 320,
+  });
+  const map = new Map();
+  const alias = new Map();
+  for (const r of [...(j.query?.normalized || []), ...(j.query?.redirects || [])]) alias.set(r.from, r.to);
+  for (const p of j.query?.pages || []) if (!p.missing) map.set(p.title, p);
+  const find = t => { let k = t; for (let i = 0; i < 3 && alias.has(k); i++) k = alias.get(k); return map.get(k); };
+
+  return Promise.all(stops.map(async s => {
+    let p = find(s.title);
+    if (!p?.coordinates) {
+      const sr = await api({ action: 'query', list: 'search', srsearch: s.search || s.title, srlimit: 1, srnamespace: 0 }).catch(() => null);
+      const t = sr?.query?.search?.[0]?.title;
+      if (t) {
+        const q = await api({ action: 'query', titles: t, redirects: 1, prop: 'coordinates|pageimages|description', piprop: 'thumbnail', pithumbsize: 320 }).catch(() => null);
+        p = q?.query?.pages?.[0];
+      }
+    }
+    const c = p?.coordinates?.[0];
+    return {
+      ...s,
+      title: p?.title || s.title,
+      lat: c?.lat ?? null, lon: c?.lon ?? null,
+      thumb: p?.thumbnail?.source || null,
+      description: p?.description || '',
+    };
+  }));
+}

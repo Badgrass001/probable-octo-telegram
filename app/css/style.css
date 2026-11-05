@@ -423,3 +423,147 @@ body.has-street .map-hint { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ==========================================================================
+   Carte : contrôles, lieux remarquables, parcours, boussole, plein écran
+   ========================================================================== */
+
+#map { transition: transform .25s linear; transform-origin: 50% 50%; }
+.map-wrap { overflow: hidden; }
+.gps-pill { left: 12px; transform: none; max-width: calc(100% - 80px); }
+
+.map-ctrls {
+  position: absolute; top: 12px; right: 12px; z-index: 600; display: flex; flex-direction: column;
+  background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
+}
+.map-ctrl {
+  width: 44px; height: 44px; border: 0; background: transparent; color: var(--ink-2); display: grid; place-items: center; cursor: pointer;
+}
+.map-ctrl + .map-ctrl { border-top: 1px solid var(--line); }
+.map-ctrl svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.map-ctrl[aria-pressed="true"] { color: var(--plaque-2); background: var(--gold-soft); }
+#btn-compass .needle { transform-origin: 12px 12px; transition: transform .25s linear; }
+#btn-compass .n { fill: #c43d3d; stroke: none; }
+#btn-compass .s { fill: var(--ink-3); stroke: none; }
+#btn-full .close { display: none; }
+#btn-full[aria-pressed="true"] .open { display: none; }
+#btn-full[aria-pressed="true"] .close { display: inline; }
+
+.map-attrib {
+  position: absolute; right: 0; bottom: 0; z-index: 450; padding: 1px 6px; font-size: 10px;
+  background: rgba(255, 255, 255, .75); color: #555; border-top-left-radius: 6px;
+}
+.map-attrib a { color: inherit; }
+
+/* Lieux remarquables */
+.poi { background: none; border: 0; }
+.poi-dot {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+  background: var(--card); color: var(--gold); border: 2.5px solid var(--gold); box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+  transform: rotate(var(--bearing, 0deg)); cursor: pointer; transition: transform .15s;
+}
+.poi-dot img { width: 100%; height: 100%; object-fit: cover; }
+.poi-dot .ico { width: 18px; height: 18px; }
+.poi:hover .poi-dot { transform: rotate(var(--bearing, 0deg)) scale(1.12); }
+
+/* Position et direction */
+.me { position: relative; }
+.me .cone {
+  display: none; position: absolute; left: 50%; top: 50%; width: 70px; height: 70px; margin: -35px 0 0 -35px;
+  background: conic-gradient(from -28deg, rgba(59, 111, 216, .45), rgba(59, 111, 216, 0) 56deg, transparent 0);
+  border-radius: 50%; transform: rotate(var(--h, 0deg)); pointer-events: none;
+  -webkit-mask: radial-gradient(circle, #000 0 60%, transparent 70%); mask: radial-gradient(circle, #000 0 60%, transparent 70%);
+}
+.me.has-heading .cone { display: block; }
+.me span { position: relative; }
+
+/* Étapes de parcours */
+.stop-marker { background: none; border: 0; }
+.stop-marker .upright {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--rc); color: #fff; font: 700 14px/1 var(--sans); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+  transform: rotate(var(--bearing, 0deg)); cursor: pointer;
+}
+.stop-marker.done .upright { background: var(--live); }
+
+.route-bar {
+  position: absolute; left: 12px; right: 70px; top: 56px; z-index: 600; display: flex; align-items: center;
+  background: var(--card); border-radius: 12px; box-shadow: var(--shadow); border-left: 5px solid var(--rc, var(--plaque));
+}
+.route-bar-txt {
+  flex: 1; min-width: 0; border: 0; background: none; text-align: left; padding: 9px 4px 9px 12px; cursor: pointer;
+  font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.route-bar-txt strong { color: var(--rc, var(--plaque)); margin-right: 4px; }
+.route-bar-x { border: 0; background: none; width: 40px; height: 40px; display: grid; place-items: center; color: var(--ink-3); cursor: pointer; }
+.route-bar-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+/* Liste et fiche de parcours */
+.routes { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.route-card {
+  width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center;
+  padding: 14px 14px 14px 16px; border-radius: 14px; border: 1px solid var(--line); border-left: 5px solid var(--rc);
+  background: var(--card); cursor: pointer;
+}
+.route-card:hover { box-shadow: var(--shadow); }
+.route-card .chev { grid-column: 2; grid-row: 1 / 4; color: var(--ink-3); }
+.route-theme { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--rc); }
+.route-title { font: 600 21px/1.15 var(--serif); }
+.route-sub { font-size: 13px; color: var(--ink-2); }
+.route-head .eyebrow { color: var(--rc); }
+.route-head .display { font-size: 30px; }
+.route-metrics { display: flex; gap: 8px; margin: 4px 0 16px; flex-wrap: wrap; }
+.route-metrics span {
+  flex: 1 1 0; min-width: 90px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 10px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line);
+}
+.route-metrics .ico { color: var(--rc); width: 18px; height: 18px; }
+.route-metrics strong { font: 700 20px/1.1 var(--serif); }
+.route-metrics small { font-size: 11px; color: var(--ink-3); }
+.stops { list-style: none; padding: 0; margin: 20px 0 0; position: relative; }
+.stops::before { content: ""; position: absolute; left: 17px; top: 20px; bottom: 20px; width: 2px; background: color-mix(in srgb, var(--rc) 35%, transparent); }
+.stop button {
+  position: relative; width: 100%; display: flex; gap: 12px; align-items: flex-start; text-align: left;
+  border: 0; background: none; padding: 10px 0; cursor: pointer;
+}
+.stop-n {
+  flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--rc); color: #fff; font-weight: 700; border: 3px solid var(--paper);
+}
+.stop.done .stop-n { background: var(--live); }
+.stop-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+.stop-body strong { font: 600 19px/1.2 var(--serif); }
+.stop-body span { font-size: 13.5px; color: var(--ink-2); }
+.stop img { flex: none; width: 64px; height: 64px; border-radius: 10px; object-fit: cover; }
+.sheet-dist { display: flex; align-items: center; gap: 6px; margin: -4px 0 0; font-size: 13px; color: var(--gold); font-weight: 600; }
+.sheet-dist .ico { width: 16px; height: 16px; }
+
+/* Plein écran */
+body.map-full .topbar, body.map-full .panel { display: none; }
+body.map-full .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+body.map-full .map-hint { display: none; }
+body.map-full .map-ctrls { top: calc(env(safe-area-inset-top) + 12px); }
+body.map-full .gps-pill { top: calc(env(safe-area-inset-top) + 12px) !important; }
+body.map-full .route-bar { top: calc(env(safe-area-inset-top) + 58px); }
+body.map-full .fab { bottom: calc(env(safe-area-inset-bottom) + 96px) !important; }
+.street-bar {
+  position: absolute; z-index: 600; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 22px);
+  display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 16px; background: var(--card); box-shadow: var(--shadow);
+}
+.sb-plaque {
+  flex: 1; min-width: 0; padding: 3px; border-radius: 9px; background: var(--plaque-frame);
+}
+.sb-name {
+  display: block; padding: 7px 10px; border: 1.5px solid rgba(255, 255, 255, .9); border-radius: 6px;
+  background: var(--plaque); color: #fff; font: 700 16px/1.1 var(--serif); letter-spacing: .04em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+}
+.street-bar .btn { flex: none; min-height: 42px; }
+body.compass-on .map-hint { display: none; }
+
+@media (max-width: 820px) {
+  .map-ctrls { top: 10px; }
+  .map-ctrl { width: 40px; height: 40px; }
+  .route-bar { top: 52px; right: 62px; }
+  body.panel-expanded .map-ctrls, body.panel-expanded .route-bar { display: none; }
+}

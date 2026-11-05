@@ -31,6 +31,9 @@
         <button class="icon-btn" id="btn-search" title="Chercher une voie" aria-label="Chercher une voie">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
         </button>
+        <button class="icon-btn" id="btn-parcours" title="Parcours thématiques" aria-label="Parcours thématiques">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.8"/></svg>
+        </button>
         <button class="icon-btn" id="btn-voice" title="Guide vocal" aria-label="Activer le guide vocal" aria-pressed="false">
           <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
         </button>
@@ -45,6 +48,26 @@
       <section class="map-wrap" aria-label="Carte">
         <div id="map"></div>
         <div class="gps-pill" id="gps-pill" role="status"><span class="dot"></span><span class="txt">Géolocalisation inactive</span></div>
+        <div class="map-ctrls" role="group" aria-label="Options de la carte">
+          <button class="map-ctrl" id="btn-places" aria-pressed="true" title="Lieux remarquables" aria-label="Afficher les lieux remarquables">
+            <svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5"/></svg>
+          </button>
+          <button class="map-ctrl" id="btn-compass" aria-pressed="false" title="Orienter la carte selon ma direction" aria-label="Boussole : orienter la carte selon ma direction">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><g class="needle"><path class="n" d="M12 4.5 14.6 12H9.4z"/><path class="s" d="M12 19.5 9.4 12h5.2z"/></g></svg>
+          </button>
+          <button class="map-ctrl" id="btn-full" aria-pressed="false" title="Carte en plein écran" aria-label="Carte en plein écran">
+            <svg viewBox="0 0 24 24"><path class="open" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="close" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+          </button>
+        </div>
+        <div class="route-bar" id="route-bar" hidden>
+          <button class="route-bar-txt"></button>
+          <button class="route-bar-x" id="route-bar-close" aria-label="Quitter le parcours"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="street-bar" id="street-bar" hidden>
+          <span class="sb-plaque"><span class="sb-name"></span></span>
+          <button class="btn primary" id="sb-read">Lire la fiche</button>
+        </div>
+        <div class="map-attrib">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a> · <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a></div>
         <button class="fab" id="btn-locate" aria-label="Me localiser et suivre ma promenade" title="Me localiser">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7.5"/></svg>
         </button>
