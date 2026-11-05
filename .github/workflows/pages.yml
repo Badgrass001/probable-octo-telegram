@@ -2,7 +2,6 @@ name: Publier Flâneur sur GitHub Pages
 
 on:
   push:
-    branches: [main]
     paths: ['app/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
@@ -17,6 +16,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Publie uniquement depuis la branche par défaut du dépôt, quel que soit son nom.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     environment:
       name: github-pages

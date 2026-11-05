@@ -41,7 +41,7 @@ python3 -m http.server 8000 --directory app
 
 puis ouvrez http://localhost:8000.
 
-**En ligne (pour l'utiliser dans la rue)** : le workflow `.github/workflows/pages.yml` publie le dossier `app/` sur GitHub Pages à chaque modification sur `main`. Il faut l'activer une fois dans *Settings → Pages → Build and deployment → Source : GitHub Actions*. L'adresse sera de la forme `https://<utilisateur>.github.io/<dépôt>/`.
+**En ligne (pour l'utiliser dans la rue)** : le workflow `.github/workflows/pages.yml` publie le dossier `app/` sur GitHub Pages à chaque modification sur la branche par défaut du dépôt. Il faut l'activer une fois dans *Settings → Pages → Build and deployment → Source : GitHub Actions*. L'adresse sera de la forme `https://<utilisateur>.github.io/<dépôt>/`.
 
 **Installer sur le téléphone** : ouvrez l'adresse dans Safari (iPhone) ou Chrome (Android), puis « Partager → Sur l'écran d'accueil » / « Installer l'application ».
 
